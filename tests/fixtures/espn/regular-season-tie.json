@@ -1,0 +1,44 @@
+{
+  "season": { "year": 2022, "type": 2 },
+  "week": { "number": 1 },
+  "events": [
+    {
+      "id": "401437850",
+      "date": "2022-09-11T17:00:00Z",
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "homeAway": "home",
+              "team": {
+                "id": "10",
+                "abbreviation": "IND",
+                "displayName": "Indianapolis Colts"
+              },
+              "score": "20",
+              "winner": false
+            },
+            {
+              "homeAway": "away",
+              "team": {
+                "id": "30",
+                "abbreviation": "HOU",
+                "displayName": "Houston Texans"
+              },
+              "score": "20",
+              "winner": false
+            }
+          ],
+          "status": {
+            "type": {
+              "name": "STATUS_FINAL",
+              "state": "post",
+              "completed": true,
+              "detail": "Final/OT"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

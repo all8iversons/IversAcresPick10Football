@@ -1,0 +1,82 @@
+{
+  "season": { "year": 2024, "type": 2 },
+  "week": { "number": 1 },
+  "events": [
+    {
+      "id": "401671800",
+      "date": "2024-09-06T00:20:00Z",
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "homeAway": "home",
+              "team": {
+                "id": "12",
+                "abbreviation": "KC",
+                "displayName": "Kansas City Chiefs"
+              },
+              "score": "27",
+              "winner": true
+            },
+            {
+              "homeAway": "away",
+              "team": {
+                "id": "33",
+                "abbreviation": "BAL",
+                "displayName": "Baltimore Ravens"
+              },
+              "score": "20",
+              "winner": false
+            }
+          ],
+          "status": {
+            "type": {
+              "name": "STATUS_FINAL",
+              "state": "post",
+              "completed": true,
+              "detail": "Final"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "401671801",
+      "date": "2024-09-08T17:00:00Z",
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "homeAway": "home",
+              "team": {
+                "id": "2",
+                "abbreviation": "BUF",
+                "displayName": "Buffalo Bills"
+              },
+              "score": "0",
+              "winner": false
+            },
+            {
+              "homeAway": "away",
+              "team": {
+                "id": "22",
+                "abbreviation": "ARI",
+                "displayName": "Arizona Cardinals"
+              },
+              "score": "0",
+              "winner": false
+            }
+          ],
+          "status": {
+            "type": {
+              "name": "STATUS_SCHEDULED",
+              "state": "pre",
+              "completed": false,
+              "detail": "Scheduled"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
