@@ -25,6 +25,9 @@ database, and application data. Protect them as operator credentials.
 - The public anon/publishable key and `SUPABASE_PUBLIC_URL` may be returned by
   `/api/config`. Supabase row-level security remains the authorization
   boundary for browser clients.
+- League invite codes are stored in the database so current members can copy
+  them later. Treat them as shareable join credentials: anyone with a code can
+  join that league, and authenticated league members can view the code.
 - `SUPABASE_SERVICE_ROLE_KEY`, PostgreSQL passwords, JWT signing material,
   dashboard credentials, and other private credentials must remain in
   protected server/deployment configuration.

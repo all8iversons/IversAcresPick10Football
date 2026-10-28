@@ -12,6 +12,7 @@ const leagueListSchema = z.object({
     z.object({
       id: z.string(),
       name: z.string(),
+      inviteCode: z.string(),
       role: z.enum(["owner", "member"]),
     }),
   ),
@@ -20,6 +21,30 @@ const leagueListSchema = z.object({
 type LeagueListItem = z.infer<typeof leagueListSchema>["leagues"][number];
 
 class AuthenticationRequiredError extends Error {}
+
+async function copyText(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch {
+      // Fall back to the selection-based copy path for LAN HTTP origins.
+    }
+  }
+
+  const input = document.createElement("textarea");
+  input.value = value;
+  input.setAttribute("readonly", "");
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  document.body.append(input);
+  input.select();
+  const copied = document.execCommand("copy");
+  input.remove();
+  if (!copied) {
+    throw new Error("The browser could not copy the invite code.");
+  }
+}
 
 async function fetchLeagueList(): Promise<LeagueListItem[]> {
   const response = await fetch("/api/leagues");
@@ -34,6 +59,7 @@ export function LeagueDashboard() {
   const [leagues, setLeagues] = useState<LeagueListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copyStatus, setCopyStatus] = useState<Record<string, string>>({});
 
   const refresh = useCallback(async () => {
     try {
@@ -132,6 +158,36 @@ export function LeagueDashboard() {
             <article className="card" key={league.id}>
               <h3>{league.name}</h3>
               <p className="muted">{league.role}</p>
+              <p>
+                Invite code: <code>{league.inviteCode}</code>
+              </p>
+              <button
+                className="button"
+                onClick={async () => {
+                  try {
+                    await copyText(league.inviteCode);
+                    setCopyStatus((statuses) => ({
+                      ...statuses,
+                      [league.id]: "Invite code copied.",
+                    }));
+                  } catch (caught) {
+                    console.error("Copying league invite code failed", caught);
+                    setCopyStatus((statuses) => ({
+                      ...statuses,
+                      [league.id]:
+                        "Could not copy automatically. Select the code and copy it.",
+                    }));
+                  }
+                }}
+                type="button"
+              >
+                Copy invite code
+              </button>
+              {copyStatus[league.id] && (
+                <p className="muted" role="status">
+                  {copyStatus[league.id]}
+                </p>
+              )}
               <Link
                 className="button"
                 href={`/leagues/${league.id}/weeks/current`}

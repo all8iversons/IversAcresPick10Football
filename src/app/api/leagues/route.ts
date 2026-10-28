@@ -32,7 +32,7 @@ export async function GET() {
     if (memberships.data.length === 0) return jsonOk({ leagues: [] });
     const leagues = await supabase
       .from("leagues")
-      .select("id, name, created_at")
+      .select("id, name, invite_code, created_at")
       .in(
         "id",
         memberships.data.map((membership) => membership.league_id),
@@ -51,6 +51,7 @@ export async function GET() {
       leagues: leagues.data.map((league) => ({
         id: league.id,
         name: league.name,
+        inviteCode: league.invite_code,
         role: roleByLeague.get(league.id) ?? "member",
         createdAt: league.created_at,
       })),
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
     const result = await supabase.rpc("create_league", {
       p_name: body.name,
       p_invite_code_hash: hashInviteCode(inviteCode),
+      p_invite_code: inviteCode,
     });
     if (result.error) {
       throw new HttpError(

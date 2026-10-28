@@ -38,12 +38,18 @@ export interface Database {
         {
           id: string;
           name: string;
+          invite_code: string;
           invite_code_hash: string;
           created_by: string;
           created_at: string;
         },
-        { name: string; invite_code_hash: string; created_by: string },
-        { name?: string; invite_code_hash?: string }
+        {
+          name: string;
+          invite_code: string;
+          invite_code_hash: string;
+          created_by: string;
+        },
+        { name?: string; invite_code?: string; invite_code_hash?: string }
       >;
       league_memberships: Table<
         {
@@ -190,7 +196,11 @@ export interface Database {
     Views: Record<string, never>;
     Functions: {
       create_league: {
-        Args: { p_name: string; p_invite_code_hash: string };
+        Args: {
+          p_name: string;
+          p_invite_code_hash: string;
+          p_invite_code: string;
+        };
         Returns: Array<{
           id: string;
           name: string;

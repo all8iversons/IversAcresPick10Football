@@ -134,6 +134,9 @@ private Compose network. It uses `supabase db push` and the repository's
 migration history; do not start an app release with unapplied migrations. The
 profile downloads the pinned CLI package and its Linux platform binary from npm
 when invoked, so the Unraid host needs outbound access to the npm registry.
+The persistent-invite-code migration creates new codes for existing leagues;
+current memberships stay intact, but previously shared invite codes stop
+working and should be shared again from the leagues page.
 The app's readiness endpoint checks connectivity and the required `leagues`
 schema before reporting ready.
 
