@@ -17,7 +17,7 @@ export function SignUpForm() {
     setBusy(true);
     try {
       const form = new FormData(event.currentTarget);
-      const supabase = createSupabaseBrowserClient();
+      const supabase = await createSupabaseBrowserClient();
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: String(form.get("email")),
         password: String(form.get("password")),

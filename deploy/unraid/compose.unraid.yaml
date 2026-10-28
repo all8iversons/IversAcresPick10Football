@@ -1,0 +1,63 @@
+services:
+  app:
+    image: ${APP_IMAGE:?Set APP_IMAGE to an immutable app version}
+    build:
+      context: ${APP_SOURCE_PATH:?Set APP_SOURCE_PATH to the application checkout}
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL:?Set the participant-facing Supabase URL}
+      SUPABASE_ANON_KEY: ${ANON_KEY:?Set ANON_KEY in the protected Supabase environment}
+      SUPABASE_INTERNAL_URL: ${SUPABASE_INTERNAL_URL:-http://api-gw:8000}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:?Set SERVICE_ROLE_KEY in the protected Supabase environment}
+    ports:
+      - "${APP_BIND_IP:-0.0.0.0}:${APP_PORT:-3000}:3000"
+    depends_on:
+      kong:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  kong:
+    ports: !override
+      - "${GATEWAY_BIND_IP:-0.0.0.0}:${KONG_HTTP_PORT:-8000}:8000/tcp"
+
+  db:
+    ports: !override []
+
+  supavisor:
+    ports: !override []
+
+  migrate:
+    image: node:22.23.4-alpine3.23
+    profiles:
+      - tools
+    working_dir: /workspace
+    entrypoint:
+      - npx
+    command:
+      - --yes
+      - supabase@${SUPABASE_CLI_VERSION:?Set SUPABASE_CLI_VERSION to a pinned CLI version}
+      - db
+      - push
+      - --db-url
+      - postgres://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the protected Supabase environment}@db:5432/${POSTGRES_DB:-postgres}
+      - --yes
+    volumes:
+      - ${APP_SOURCE_PATH:?Set APP_SOURCE_PATH to the application checkout}/supabase:/workspace/supabase:ro
+    depends_on:
+      db:
+        condition: service_healthy

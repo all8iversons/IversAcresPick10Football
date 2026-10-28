@@ -1,15 +1,12 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
+import { getServerSupabaseRuntimeConfig } from "@/lib/config/supabase-runtime";
 import type { Database } from "@/lib/db/database.types";
 
 export function createSupabaseAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceRoleKey) {
-    throw new Error("Server-only Supabase service configuration is missing.");
-  }
+  const { internalUrl, serviceRoleKey } = getServerSupabaseRuntimeConfig();
 
-  return createClient<Database>(url, serviceRoleKey, {
+  return createClient<Database>(internalUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }

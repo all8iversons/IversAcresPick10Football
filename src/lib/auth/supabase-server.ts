@@ -1,16 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getInternalSupabaseRuntimeConfig } from "@/lib/config/supabase-runtime";
 import type { Database } from "@/lib/db/database.types";
 
 export async function createSupabaseServerClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
-    throw new Error("Supabase server configuration is missing.");
-  }
+  const { internalUrl, anonKey } = getInternalSupabaseRuntimeConfig();
 
   const cookieStore = await cookies();
-  return createServerClient<Database>(url, key, {
+  return createServerClient<Database>(internalUrl, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

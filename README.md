@@ -35,6 +35,15 @@ private league, and share the invite code shown once at league creation. The
 current NFL schedule is fetched server-side and cached; automated tests use
 static fixtures and do not call ESPN.
 
+## Unraid deployment
+
+The app and self-hosted Supabase stack can be installed together on Unraid.
+See the [Unraid installation guide](deploy/unraid/README.md) for the pinned
+Compose setup, persistent storage, and health checks. Separate guides cover
+[backup and restore](deploy/unraid/BACKUP-RESTORE.md),
+[network exposure](deploy/unraid/NETWORKING.md), and
+[secret handling](deploy/unraid/SECRETS.md).
+
 ## Validation
 
 ```powershell

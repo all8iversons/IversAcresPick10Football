@@ -9,6 +9,7 @@ coverage/
 .env
 .env.*
 !.env.example
+!deploy/unraid/.env.unraid.example
 .vercel/
 supabase/.temp/
 playwright-report/

@@ -91,8 +91,9 @@ export function LeagueDashboard() {
           onClick={async () => {
             const { createSupabaseBrowserClient } =
               await import("@/lib/auth/supabase-browser");
-            const { error: signOutError } =
-              await createSupabaseBrowserClient().auth.signOut();
+            const { error: signOutError } = await (
+              await createSupabaseBrowserClient()
+            ).auth.signOut();
             if (signOutError) {
               console.error("Sign-out failed", signOutError);
               setError("Unable to sign out. Please try again.");

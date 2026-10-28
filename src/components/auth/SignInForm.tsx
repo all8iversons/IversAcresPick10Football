@@ -15,7 +15,7 @@ export function SignInForm() {
     setBusy(true);
     try {
       const form = new FormData(event.currentTarget);
-      const supabase = createSupabaseBrowserClient();
+      const supabase = await createSupabaseBrowserClient();
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: String(form.get("email")),
         password: String(form.get("password")),
