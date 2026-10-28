@@ -3,6 +3,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { getSupabaseAuthCookieOptions } from "@/lib/auth/supabase-cookie-options";
 import type { Database } from "@/lib/db/database.types";
 
 const publicConfigSchema = z.object({
@@ -30,6 +31,11 @@ async function loadSupabaseBrowserClient(): Promise<SupabaseClient<Database>> {
   return createBrowserClient<Database>(
     parsedConfig.data.supabaseUrl,
     parsedConfig.data.supabaseAnonKey,
+    {
+      cookieOptions: getSupabaseAuthCookieOptions(
+        parsedConfig.data.supabaseUrl,
+      ),
+    },
   );
 }
 

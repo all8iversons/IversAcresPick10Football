@@ -1,13 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getSupabaseAuthCookieOptions } from "@/lib/auth/supabase-cookie-options";
 import { getInternalSupabaseRuntimeConfig } from "@/lib/config/supabase-runtime";
 import type { Database } from "@/lib/db/database.types";
 
 export async function createSupabaseServerClient() {
-  const { internalUrl, anonKey } = getInternalSupabaseRuntimeConfig();
+  const { internalUrl, anonKey, url } = getInternalSupabaseRuntimeConfig();
 
   const cookieStore = await cookies();
   return createServerClient<Database>(internalUrl, anonKey, {
+    cookieOptions: getSupabaseAuthCookieOptions(url),
     cookies: {
       getAll() {
         return cookieStore.getAll();

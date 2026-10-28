@@ -28,6 +28,16 @@ describe("ESPN schedule normalization", () => {
     });
   });
 
+  it("normalizes the ESPN WSH abbreviation to Washington's stadium time zone", () => {
+    const wshFixture = structuredClone(weekFixture);
+    wshFixture.events[0].competitions[0].competitors[0].team.abbreviation =
+      "WSH";
+
+    const schedule = normalizeScoreboard(wshFixture, 2024, 1, "week-id");
+
+    expect(schedule.games[0]?.venueTimeZone).toBe("America/New_York");
+  });
+
   it("rejects a response for the wrong season or week", () => {
     expect(() => normalizeScoreboard(weekFixture, 2023, 1, "week-id")).toThrow(
       "ESPN scoreboard response does not match the requested regular-season week.",

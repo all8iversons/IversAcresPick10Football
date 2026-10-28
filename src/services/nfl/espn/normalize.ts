@@ -42,6 +42,7 @@ const TEAM_TIME_ZONES: Readonly<Record<string, string>> = {
   TB: "America/New_York",
   TEN: "America/Chicago",
   WAS: "America/New_York",
+  WSH: "America/New_York",
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

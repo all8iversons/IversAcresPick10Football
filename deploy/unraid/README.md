@@ -82,6 +82,16 @@ the populated environment files and Supabase data stay outside Git.
    `$SUPABASE_DOCKER_DIR/volumes/storage`; keep the configured data paths
    aligned with those exact directories. Do not publish populated `.env`
    files, keys, or passwords.
+5. Keep `JWT_SECRET`, `ANON_KEY`, and `SERVICE_ROLE_KEY` together from the same
+   generated Supabase environment. The Compose override passes the anon and
+   service-role keys from that protected environment to the app; do not
+   independently replace one key or copy different keys into the app settings.
+6. If email confirmation is enabled, configure Auth to use a reachable SMTP
+   server. For a private LAN-only deployment without SMTP, account creation
+   can instead be configured for email autoconfirm in the protected Supabase
+   `docker/.env`; this skips email verification and should not be used as a
+   substitute for SMTP on an Internet-facing deployment. Recreate the Auth
+   service after changing its environment.
 
 ## Validate and start
 
@@ -133,6 +143,36 @@ account, sign in, and verify league access. Check `/api/health/live`,
 public API URL and anon/publishable key. Do not expose service-role keys,
 database passwords, dashboard credentials, or JWT signing secrets.
 
+## Rebuild the app after source changes
+
+The production app runs from a built image and does not read TypeScript changes
+from the host source directory at runtime. Pull the intended `unraid` branch,
+then rebuild and recreate the app using the same Compose files and environment
+files:
+
+```bash
+git -C "$APP_SOURCE_PATH" pull --ff-only origin unraid
+cd "$SUPABASE_DOCKER_DIR"
+docker compose \
+  --project-directory "$SUPABASE_DOCKER_DIR" \
+  --env-file "$SUPABASE_DOCKER_DIR/.env" \
+  --env-file "$DEPLOYMENT_DIR/.env.unraid" \
+  -f "$SUPABASE_DOCKER_DIR/docker-compose.yml" \
+  -f "$APP_SOURCE_PATH/deploy/unraid/compose.unraid.yaml" \
+  build app
+docker compose \
+  --project-directory "$SUPABASE_DOCKER_DIR" \
+  --env-file "$SUPABASE_DOCKER_DIR/.env" \
+  --env-file "$DEPLOYMENT_DIR/.env.unraid" \
+  -f "$SUPABASE_DOCKER_DIR/docker-compose.yml" \
+  -f "$APP_SOURCE_PATH/deploy/unraid/compose.unraid.yaml" \
+  up -d --wait --force-recreate app
+```
+
+Apply the migration profile before recreating the app when the release includes
+unapplied database migrations. Confirm the app container becomes healthy and
+test sign-in and league access after recreation.
+
 ## Unraid service management
 
 Install the stack in Compose Manager Plus using the upstream Compose file and
@@ -151,3 +191,9 @@ If a host port is occupied, choose a different `APP_PORT` or
 `KONG_HTTP_PORT`, update the corresponding public URLs, and recreate the
 services. If readiness fails, inspect sanitized health state and Compose
 service health; do not add fixed startup delays or delete persistent data.
+If sign-in succeeds but the app returns `401` for authenticated API requests,
+verify browser and server clients use the same public Supabase URL and that
+`JWT_SECRET`, `ANON_KEY`, and `SERVICE_ROLE_KEY` belong to the same generated
+Supabase configuration. If account creation fails because Auth cannot resolve
+`supabase-mail`, configure a reachable SMTP server or use email autoconfirm
+only for a private LAN deployment without email verification.

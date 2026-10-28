@@ -18,6 +18,11 @@ private Compose network.
 - If a port is already in use, select another host port, update every
   corresponding public origin, validate Compose interpolation, and recreate
   the affected services.
+- The app uses a shared Supabase auth-cookie name on both browser and server
+  clients. The cookie is marked `Secure` when `SUPABASE_PUBLIC_URL` uses HTTPS
+  and not marked `Secure` for plain-HTTP LAN URLs so browsers can send it.
+  Plain HTTP does not protect session traffic from other devices on the
+  network; use HTTPS for untrusted networks and all remote access.
 - Verify published ports with `docker ps --format '{{.Names}} {{.Ports}}'`.
   The only participant-facing mappings should be the app and gateway HTTP
   ports. The override removes upstream PostgreSQL and Supavisor mappings and
