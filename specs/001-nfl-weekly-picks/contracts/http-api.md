@@ -105,6 +105,15 @@ league membership.
       "awayTeam": { "id": "team-id-2", "name": "Away Team" }
     }
   ],
+  "submissionStatuses": [
+    {
+      "participantId": "uuid",
+      "participantName": "Member",
+      "isCurrentUser": false,
+      "hasSubmitted": true
+    }
+  ],
+  "otherEntries": [],
   "myEntry": {
     "submittedAt": "2026-09-10T19:00:00Z",
     "picks": [{ "gameId": "uuid", "selectedTeamId": "team-id" }]
@@ -115,6 +124,10 @@ league membership.
 `myEntry` is `null` when the participant has no entry. Games whose league
 members' picks are not yet visible do not include other participants' picks.
 The current participant's picks are visible to them at all times.
+`submissionStatuses` includes every league member and only indicates whether an
+entry exists; it never includes pick details. `otherEntries` is empty before
+the deadline and contains submitted league entries after lockout. Requests for
+earlier weeks use the same endpoint and visibility rules.
 
 ## `PUT /api/leagues/{leagueId}/weeks/{season}/{weekNumber}/picks`
 

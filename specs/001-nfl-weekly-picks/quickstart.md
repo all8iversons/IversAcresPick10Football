@@ -70,10 +70,14 @@ runnable as those implementation tasks are completed.
 7. **Privacy**: Create two leagues with disjoint membership. Verify non-members
    cannot read private entries or standings; own picks remain visible before
    lockout while other members' picks stay hidden until lockout.
-8. **Rankings**: Verify weekly and season totals include only the selected
+8. **Submission status and history**: Before lockout, verify league members can
+   see who submitted and refresh the status without seeing other members'
+   picks. Navigate to a prior week and verify submitted league picks are shown
+   only after that week's deadline and only to league members.
+9. **Rankings**: Verify weekly and season totals include only the selected
    league, equal totals use standard competition ranks, and season totals sum
    completed weeks.
-9. **Accessibility**: Complete pick review and submission with keyboard-only
+10. **Accessibility**: Complete pick review and submission with keyboard-only
    navigation and an assistive-technology smoke test; check labels, focus,
    errors, selection count, lockout, and submission announcements.
 

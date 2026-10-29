@@ -21,6 +21,7 @@ export function WeeklyPicksClient({
     games,
     picks,
     otherEntries,
+    submissionStatuses,
     otherEntriesLoaded,
     loading,
     saving,
@@ -28,7 +29,9 @@ export function WeeklyPicksClient({
     error,
     now,
     selectedByGame,
+    refreshingStatuses,
     selectTeam,
+    refreshStatuses,
     submit,
   } = useWeeklyPicks(leagueId, season, weekNumber);
   const isLocked =
@@ -90,7 +93,54 @@ export function WeeklyPicksClient({
           </p>
         </div>
 
+        <nav className="card stack" aria-labelledby="previous-weeks-heading">
+          <h2 id="previous-weeks-heading">Previous weeks</h2>
+          {week.weekNumber === 1 ? (
+            <p className="muted">No previous weeks are available this season.</p>
+          ) : (
+            <div className="week-links">
+              {Array.from({ length: week.weekNumber - 1 }, (_, index) => {
+                const previousWeek = week.weekNumber - index - 1;
+                return (
+                  <Link
+                    className="button"
+                    href={`/leagues/${leagueId}/weeks/${week.season}/${previousWeek}`}
+                    key={previousWeek}
+                  >
+                    Week {previousWeek}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </nav>
+
         <PickCount count={picks.length} limit={10} />
+        <section
+          className="card stack"
+          aria-labelledby="submission-status-heading"
+        >
+          <h2 id="submission-status-heading">League submission status</h2>
+          <p className="muted">
+            {isLocked
+              ? "Pick details are now available."
+              : "Pick details stay hidden until the deadline."}
+          </p>
+          <button
+            className="button"
+            disabled={refreshingStatuses}
+            onClick={() => void refreshStatuses()}
+            type="button"
+          >
+            {refreshingStatuses ? "Refreshing..." : "Refresh status"}
+          </button>
+          {submissionStatuses.map((status) => (
+            <p key={status.participantId}>
+              {status.isCurrentUser ? "You" : status.participantName}:{" "}
+              {status.hasSubmitted ? "Submitted" : "Not submitted"}
+            </p>
+          ))}
+        </section>
         {isLocked && (
           <p className="card" role="status">
             Picks are locked for this week. Entries cannot be changed after

@@ -65,14 +65,25 @@ const weekResponseSchema = z.object({
       ),
     }),
   ),
+  submissionStatuses: z.array(
+    z.object({
+      participantId: z.string(),
+      participantName: z.string(),
+      isCurrentUser: z.boolean(),
+      hasSubmitted: z.boolean(),
+    }),
+  ),
 });
 
 type OtherEntry = z.infer<typeof weekResponseSchema>["otherEntries"][number];
+type SubmissionStatus =
+  z.infer<typeof weekResponseSchema>["submissionStatuses"][number];
 
 interface WeekResponse {
   week: NflWeek & { isLocked: boolean };
   games: GameMatchup[];
   otherEntries: OtherEntry[];
+  submissionStatuses: SubmissionStatus[];
   myEntry: {
     id: string;
     submittedAt: string;
@@ -85,6 +96,7 @@ interface UseWeeklyPicksResult {
   games: GameMatchup[];
   picks: UserPick[];
   otherEntries: OtherEntry[];
+  submissionStatuses: SubmissionStatus[];
   otherEntriesLoaded: boolean;
   loading: boolean;
   saving: boolean;
@@ -92,7 +104,9 @@ interface UseWeeklyPicksResult {
   error: string | null;
   now: number | null;
   selectedByGame: ReadonlyMap<string, string>;
+  refreshingStatuses: boolean;
   selectTeam(gameId: string, teamId: string): void;
+  refreshStatuses(): Promise<void>;
   submit(): Promise<void>;
 }
 
@@ -106,9 +120,13 @@ export function useWeeklyPicks(
   const [games, setGames] = useState<GameMatchup[]>([]);
   const [picks, setPicks] = useState<UserPick[]>([]);
   const [otherEntries, setOtherEntries] = useState<OtherEntry[]>([]);
+  const [submissionStatuses, setSubmissionStatuses] = useState<
+    SubmissionStatus[]
+  >([]);
   const [otherEntriesLoaded, setOtherEntriesLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [refreshingStatuses, setRefreshingStatuses] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState<number | null>(null);
@@ -148,6 +166,7 @@ export function useWeeklyPicks(
         setGames(result.games);
         setPicks(result.myEntry?.picks ?? []);
         setOtherEntries(result.otherEntries);
+        setSubmissionStatuses(result.submissionStatuses);
         setOtherEntriesLoaded(result.week.isLocked);
         setSubmitted(result.myEntry !== null);
         setError(null);
@@ -194,6 +213,7 @@ export function useWeeklyPicks(
         if (revealRequestedFor.current !== endpoint) return;
         setWeek(result.week);
         setOtherEntries(result.otherEntries);
+        setSubmissionStatuses(result.submissionStatuses);
         setOtherEntriesLoaded(true);
       })
       .catch((caught: unknown) => {
@@ -227,6 +247,32 @@ export function useWeeklyPicks(
     },
     [now, week],
   );
+
+  const refreshStatuses = useCallback(async () => {
+    setRefreshingStatuses(true);
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        if (response.status === 401) router.replace("/sign-in");
+        throw new Error(
+          `Submission status could not be refreshed (${response.status}).`,
+        );
+      }
+      const result = weekResponseSchema.parse(await response.json());
+      setSubmissionStatuses(result.submissionStatuses);
+      if (result.week.isLocked) {
+        setWeek(result.week);
+        setOtherEntries(result.otherEntries);
+        setOtherEntriesLoaded(true);
+      }
+      setError(null);
+    } catch (caught) {
+      console.error("Refreshing league submission status failed", caught);
+      setError("Submission status could not be refreshed. Please try again.");
+    } finally {
+      setRefreshingStatuses(false);
+    }
+  }, [endpoint, router]);
 
   const submit = useCallback(async () => {
     if (!week || now === null || now >= Date.parse(week.deadlineUtc)) {
@@ -266,6 +312,11 @@ export function useWeeklyPicks(
       }
       setError(null);
       setSubmitted(true);
+      setSubmissionStatuses((current) =>
+        current.map((status) =>
+          status.isCurrentUser ? { ...status, hasSubmitted: true } : status,
+        ),
+      );
     } catch (caught) {
       console.error("Pick submission failed", caught);
       setError(
@@ -283,6 +334,7 @@ export function useWeeklyPicks(
     games,
     picks,
     otherEntries,
+    submissionStatuses,
     otherEntriesLoaded,
     loading,
     saving,
@@ -291,6 +343,8 @@ export function useWeeklyPicks(
     now,
     selectedByGame,
     selectTeam,
+    refreshStatuses,
+    refreshingStatuses,
     submit,
   };
 }

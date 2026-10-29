@@ -2,6 +2,7 @@ import { z } from "zod";
 import { requireLeagueMember } from "@/lib/auth/require-league-member";
 import { errorResponse, HttpError } from "@/lib/http/errors";
 import { jsonOk } from "@/lib/http/responses";
+import { createSupabaseAdminClient } from "@/lib/db/supabase-admin";
 import {
   ESPNNFLScheduleService,
   ScheduleUnavailableError,
@@ -73,6 +74,70 @@ export async function GET(_request: Request, context: RouteContext) {
 
     const now = Date.now();
     const isLocked = now >= Date.parse(schedule.week.deadlineUtc);
+    const membershipsResult = await supabase
+      .from("league_memberships")
+      .select("participant_id")
+      .eq("league_id", leagueId);
+    if (membershipsResult.error) {
+      throw new HttpError(
+        500,
+        "PARTICIPANTS_UNAVAILABLE",
+        membershipsResult.error.message,
+      );
+    }
+
+    const participantIds = membershipsResult.data.map(
+      (membership) => membership.participant_id,
+    );
+    const [profilesResult, submittedEntriesResult] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", participantIds),
+      createSupabaseAdminClient()
+        .from("weekly_entries")
+        .select("participant_id")
+        .eq("league_id", leagueId)
+        .eq("week_id", schedule.week.id),
+    ]);
+    if (profilesResult.error) {
+      throw new HttpError(
+        500,
+        "PARTICIPANTS_UNAVAILABLE",
+        profilesResult.error.message,
+      );
+    }
+    if (submittedEntriesResult.error) {
+      throw new HttpError(
+        500,
+        "SUBMISSION_STATUS_UNAVAILABLE",
+        submittedEntriesResult.error.message,
+      );
+    }
+
+    const nameByParticipant = new Map(
+      profilesResult.data.map((profile) => [
+        profile.id,
+        profile.display_name.trim() || "League member",
+      ]),
+    );
+    const submittedParticipantIds = new Set(
+      submittedEntriesResult.data.map((entry) => entry.participant_id),
+    );
+    const submissionStatuses = participantIds
+      .map((participantId) => ({
+        participantId,
+        participantName:
+          nameByParticipant.get(participantId) ?? "League member",
+        isCurrentUser: participantId === user.id,
+        hasSubmitted: submittedParticipantIds.has(participantId),
+      }))
+      .sort(
+        (left, right) =>
+          Number(right.isCurrentUser) - Number(left.isCurrentUser) ||
+          left.participantName.localeCompare(right.participantName),
+      );
+
     let otherEntries: {
       participantId: string;
       participantName: string;
@@ -96,7 +161,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
       if (entriesResult.data.length > 0) {
         const entryIds = entriesResult.data.map((entry) => entry.id);
-        const participantIds = [
+        const otherParticipantIds = [
           ...new Set(entriesResult.data.map((entry) => entry.participant_id)),
         ];
         const [picksResult, profilesResult] = await Promise.all([
@@ -107,7 +172,7 @@ export async function GET(_request: Request, context: RouteContext) {
           supabase
             .from("profiles")
             .select("id, display_name")
-            .in("id", participantIds),
+            .in("id", otherParticipantIds),
         ]);
         if (picksResult.error) {
           throw new HttpError(
@@ -160,6 +225,7 @@ export async function GET(_request: Request, context: RouteContext) {
       games: schedule.games,
       myEntry,
       otherEntries,
+      submissionStatuses,
     });
   } catch (error) {
     if (error instanceof ScheduleUnavailableError) {

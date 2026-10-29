@@ -111,6 +111,38 @@ ranks and season totals.
 4. **Given** a participant is not a member of a league, **When** they request
    that league's standings, **Then** its standings are not shown to them.
 
+---
+
+### User Story 4 - Check Submissions and Review Previous Weeks (Priority: P2)
+
+A league participant checks whether each member has submitted an entry for the
+current week, then reviews league picks from earlier weeks after those weeks
+have locked.
+
+**Why this priority**: Submission visibility helps league members track
+participation, while historical picks let them revisit past decisions without
+compromising the current week's pick privacy.
+
+**Independent Test**: In a league with multiple participants, verify submission
+status is available before lock without exposing anyone else's picks, and
+verify the weekly view links to a locked prior week where submitted league picks
+are visible only to league members.
+
+**Acceptance Scenarios**:
+
+1. **Given** an open week and a league member, **When** they view submission
+   status, **Then** they can see which league members have submitted without
+   seeing anyone else's selected teams.
+2. **Given** an open week and a league member, **When** they refresh submission
+   status, **Then** it reflects the latest saved entries.
+3. **Given** a locked week earlier in the current season, **When** a league
+   member opens it from the previous-weeks navigation, **Then** they can review
+   submitted picks for that week.
+4. **Given** a week that has not reached its deadline, **When** a league member
+   views it, **Then** other participants' selected teams remain hidden.
+5. **Given** a participant who is not a member of a league, **When** they try
+   to access submission status or historical picks, **Then** access is denied.
+
 ### Edge Cases
 
 - A week has no Thursday game; the earliest scheduled kickoff is used as the
@@ -180,6 +212,14 @@ ranks and season totals.
 - **FR-017**: The system MUST make matchup details, pick controls, selection
   count, validation feedback, deadline, and submission state operable by
   keyboard and understandable to assistive technologies.
+- **FR-018**: The system MUST show league members whether each league member
+  has submitted a weekly entry, without exposing other participants' pick
+  selections before that week's deadline.
+- **FR-019**: The system MUST allow league members to navigate to previous
+  regular-season weeks in the current season and review submitted league picks
+  only after the selected week's deadline.
+- **FR-020**: The system MUST restrict submission status and historical picks
+  to members of the corresponding league.
 
 ### Key Entities
 

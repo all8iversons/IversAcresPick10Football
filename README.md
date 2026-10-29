@@ -33,7 +33,9 @@ npm run dev
 Open `http://localhost:3000`. New participants can create an account, create a
 private league, and copy its invite code anytime from the leagues list. The
 current NFL schedule is fetched server-side and cached; automated tests use
-static fixtures and do not call ESPN.
+static fixtures and do not call ESPN. League members can see submission
+status without revealing picks before kickoff, then browse submitted picks from
+previous weeks after the deadline.
 
 ## Unraid deployment
 

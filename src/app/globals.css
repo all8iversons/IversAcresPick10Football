@@ -159,6 +159,16 @@ a:focus-visible {
   gap: 1rem;
 }
 
+.week-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.week-links .button {
+  min-height: 2.4rem;
+}
+
 .form-field {
   display: grid;
   gap: 0.4rem;
