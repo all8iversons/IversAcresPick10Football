@@ -76,7 +76,9 @@ the populated environment files and Supabase data stay outside Git.
    the legacy setting name, `KONG_HTTP_PORT` configures the Envoy gateway's
    published HTTP port. The app uses `http://api-gw:8000` on the private
    Compose network by default; keep that internal URL separate from the
-   participant-facing gateway URL.
+   participant-facing gateway URL. Set `POSTGRES_INTERNAL_PORT` to the port
+   PostgreSQL listens on inside the database container; this is independent
+   of any PostgreSQL port published to the Unraid host.
 4. Verify that `SUPABASE_RELEASE` matches the checked-out upstream tag and
    that both data paths point to the SSD-backed locations. The upstream
    Compose file mounts PostgreSQL at
@@ -131,8 +133,9 @@ dc up -d --wait
 dc ps
 ```
 
-The `migrate` profile runs the pinned Supabase CLI against `db:5432` on the
-private Compose network. It uses `supabase db push` and the repository's
+The `migrate` profile runs the pinned Supabase CLI against
+`db:${POSTGRES_INTERNAL_PORT:-5432}` on the private Compose network. It uses
+`supabase db push` and the repository's
 migration history; do not start an app release with unapplied migrations. The
 profile downloads the pinned CLI package and its Linux platform binary from npm
 when invoked, so the Unraid host needs outbound access to the npm registry.
