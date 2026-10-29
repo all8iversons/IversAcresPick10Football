@@ -124,5 +124,16 @@ Expected: all test records return without manual reconstruction, and backup stat
 - **App does not become ready**: inspect sanitized app health status and Compose service health; confirm `SUPABASE_INTERNAL_URL` resolves from the private Compose network and required secrets/configuration are set.
 - **Browser auth or API requests fail**: confirm `SUPABASE_PUBLIC_URL` is reachable from participant devices and Supabase Auth `SITE_URL`, `API_EXTERNAL_URL`, and redirect allow-list match the configured public origins.
 - **Containers restart but data is missing**: stop the stack; verify host mappings point to the existing PostgreSQL and Storage paths before starting further updates.
+- **Migration CLI cannot connect**: check the PostgreSQL health-check output
+  and set `POSTGRES_INTERNAL_PORT` to the port accepted inside the `db`
+  container; do not infer it from the host port. The migration connection uses
+  `sslmode=disable` only on the private Compose network because the self-hosted
+  database does not accept TLS.
+- **Baseline migration collides with existing policies/tables**: stop and
+  inspect `supabase_migrations.schema_migrations` and the existing app schema.
+  An empty migration ledger does not prove the schema is empty. Never rerun
+  blindly or mark versions applied without validating every migration; for
+  disposable test data, use the test-only app-schema reset documented in the
+  Unraid deployment guide.
 - **Supabase update is blocked or reports a breaking migration**: do not force the update; follow the upstream release steps and confirm a tested pre-update backup exists.
 - **Container startup is slow**: wait for service health checks rather than adding arbitrary sleeps or repeatedly recreating the database container.

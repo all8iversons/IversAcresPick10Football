@@ -50,7 +50,13 @@ cp /mnt/user/appdata/ivers-acres-pick10/source/deploy/unraid/.env.unraid.example
 ```
 
 The app's compose override and scripts remain versioned in the source checkout;
-the populated environment files and Supabase data stay outside Git.
+the populated environment files and Supabase data stay outside Git. The paths
+above yield
+`SUPABASE_DOCKER_DIR=/mnt/user/appdata/ivers-acres-pick10/supabase/docker`.
+For an existing installation with an additional nested `supabase` directory,
+use the actual Compose directory (for example,
+`/mnt/user/appdata/ivers-acres-pick10/supabase/supabase/docker`) consistently
+in the protected environment file and every Compose command.
 
 ## Configure Supabase and the app
 
@@ -78,7 +84,13 @@ the populated environment files and Supabase data stay outside Git.
    Compose network by default; keep that internal URL separate from the
    participant-facing gateway URL. Set `POSTGRES_INTERNAL_PORT` to the port
    PostgreSQL listens on inside the database container; this is independent
-   of any PostgreSQL port published to the Unraid host.
+   of any PostgreSQL port published to the Unraid host. For a LAN setup using
+   app port 3010 and gateway port 8001, set `APP_PORT=3010`,
+   `KONG_HTTP_PORT=8001`, `SITE_URL=http://192.168.1.109:3010`,
+   `ADDITIONAL_REDIRECT_URLS=http://192.168.1.109:3010/auth/callback`,
+   `SUPABASE_PUBLIC_URL=http://192.168.1.109:8001`, and
+   `API_EXTERNAL_URL=http://192.168.1.109:8001`. Replace the host with the
+   address participants use.
 4. Verify that `SUPABASE_RELEASE` matches the checked-out upstream tag and
    that both data paths point to the SSD-backed locations. The upstream
    Compose file mounts PostgreSQL at
@@ -146,6 +158,80 @@ current memberships stay intact, but previously shared invite codes stop
 working and should be shared again from the leagues page.
 The app's readiness endpoint checks connectivity and the required `leagues`
 schema before reporting ready.
+
+The official Supabase Compose release may configure PostgreSQL to listen on a
+non-default internal port. Verify the database health-check output before
+setting `POSTGRES_INTERNAL_PORT`; do not infer it from a host mapping such as
+`5432:5433`. The same setting is used by backup and restore scripts.
+
+### Recovering an out-of-sync app migration history
+
+If `supabase db push` tries to apply the baseline but fails because Pick 10
+tables or policies already exist, stop. Do not repeatedly rerun the migration
+or mark all migrations applied without verifying the schema: the CLI history
+and live schema are out of sync. Inspect the migration ledger and Pick 10
+objects first, and take a verified backup before repairing a deployment with
+data that matters.
+
+For a disposable test deployment where deleting Pick 10 data is acceptable,
+stop the app, remove only the Pick 10 tables/functions, and then apply the
+repository migrations through the `migrate` profile. Do not drop the database,
+Supabase schemas, or `auth.users`. The app-owned objects are `profiles`,
+`leagues`, `league_memberships`, `nfl_weeks`, `nfl_games`, `weekly_entries`,
+and `team_picks`, with their app functions. After migrations, recreate profile
+rows for existing Auth users before starting the app:
+
+```bash
+POSTGRES_INTERNAL_PORT=$(
+  awk -F= '
+    $1 == "POSTGRES_INTERNAL_PORT" {
+      sub(/\r$/, "", $2)
+      print $2
+      exit
+    }
+  ' /mnt/user/appdata/ivers-acres-pick10/deployment/.env.unraid
+)
+POSTGRES_INTERNAL_PORT=${POSTGRES_INTERNAL_PORT:-5432}
+docker stop pick10-supabase-app-1
+docker exec -i pick10-supabase-db psql -v ON_ERROR_STOP=1 \
+  -p "$POSTGRES_INTERNAL_PORT" -U postgres -d postgres <<'SQL'
+BEGIN;
+DROP TABLE IF EXISTS public.team_picks CASCADE;
+DROP TABLE IF EXISTS public.weekly_entries CASCADE;
+DROP TABLE IF EXISTS public.nfl_games CASCADE;
+DROP TABLE IF EXISTS public.nfl_weeks CASCADE;
+DROP TABLE IF EXISTS public.league_memberships CASCADE;
+DROP TABLE IF EXISTS public.leagues CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+DROP FUNCTION IF EXISTS public.submit_weekly_entry(uuid, uuid, jsonb) CASCADE;
+DROP FUNCTION IF EXISTS public.join_league(text) CASCADE;
+DROP FUNCTION IF EXISTS public.create_league(text, text, text) CASCADE;
+DROP FUNCTION IF EXISTS public.create_league(text, text) CASCADE;
+DROP FUNCTION IF EXISTS public.is_league_member(uuid) CASCADE;
+DROP FUNCTION IF EXISTS public.handle_new_auth_user() CASCADE;
+COMMIT;
+SQL
+```
+
+Keep that port variable set in the same shell. Run the documented migration
+command next and only continue if it completes. Then recreate profiles for
+preserved Auth accounts:
+
+```sql
+docker exec pick10-supabase-db psql -v ON_ERROR_STOP=1 \
+  -p "$POSTGRES_INTERNAL_PORT" -U postgres -d postgres -c "
+    INSERT INTO public.profiles (id, email, display_name)
+    SELECT id, COALESCE(email, id::text),
+           COALESCE(raw_user_meta_data ->> 'display_name', '')
+    FROM auth.users
+    ON CONFLICT (id) DO UPDATE
+    SET email = EXCLUDED.email, display_name = EXCLUDED.display_name;
+  "
+```
+
+This reset deletes league, pick, schedule, and profile data. It preserves
+Supabase Auth accounts; existing users can sign in again after profile rows
+are recreated. Never use this recovery path for data that must be retained.
 
 Open `http://<unraid-host>:<APP_PORT>` from another LAN device. Create a test
 account, sign in, and verify league access. Check `/api/health/live`,

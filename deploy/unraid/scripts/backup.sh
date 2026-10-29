@@ -27,6 +27,16 @@ APP_IMAGE=$(read_setting APP_IMAGE)
 SUPABASE_POSTGRES_DATA_PATH=$(read_setting SUPABASE_POSTGRES_DATA_PATH)
 SUPABASE_STORAGE_PATH=$(read_setting SUPABASE_STORAGE_PATH)
 BACKUP_DIR=$(read_setting BACKUP_DIR)
+POSTGRES_INTERNAL_PORT=$(
+  awk -F= '
+    $1 == "POSTGRES_INTERNAL_PORT" {
+      sub(/\r$/, "", $2)
+      print $2
+      exit
+    }
+  ' "$DEPLOYMENT_DIR/.env.unraid"
+)
+POSTGRES_INTERNAL_PORT=${POSTGRES_INTERNAL_PORT:-5432}
 APP_COMPOSE_FILE="$APP_SOURCE_PATH/deploy/unraid/compose.unraid.yaml"
 
 for path in "$APP_SOURCE_PATH" "$SUPABASE_DOCKER_DIR" "$DEPLOYMENT_DIR" \
@@ -36,6 +46,8 @@ done
 [[ -f "$APP_COMPOSE_FILE" ]] || fail "Unraid Compose override was not found at $APP_COMPOSE_FILE."
 [[ -d "$SUPABASE_POSTGRES_DATA_PATH" ]] || fail "PostgreSQL data path does not exist."
 [[ -d "$SUPABASE_STORAGE_PATH" ]] || fail "Supabase Storage path does not exist."
+[[ "$POSTGRES_INTERNAL_PORT" =~ ^[0-9]+$ ]] ||
+  fail "POSTGRES_INTERNAL_PORT must be a numeric container port."
 
 case "$BACKUP_DIR/" in
   "$SUPABASE_POSTGRES_DATA_PATH/"* | "$SUPABASE_STORAGE_PATH/"*)
@@ -69,7 +81,8 @@ for required in app db storage; do
     fail "The app, database, and Storage services must be running before backup."
   fi
 done
-compose exec -T db pg_isready --username=postgres --dbname=postgres >/dev/null ||
+compose exec -T db pg_isready --port="$POSTGRES_INTERNAL_PORT" \
+  --username=postgres --dbname=postgres >/dev/null ||
   fail "PostgreSQL is not accepting connections."
 docker image inspect "$APP_IMAGE" >/dev/null 2>&1 ||
   fail "The configured app image is not present locally: $APP_IMAGE"
@@ -112,7 +125,8 @@ backup_id=$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$work/configuration/supabase" \
   "$work/configuration/deployment" "$work/configuration/application"
 
-compose exec -T db pg_dump --username=postgres --dbname=postgres --format=custom \
+compose exec -T db pg_dump --port="$POSTGRES_INTERNAL_PORT" \
+  --username=postgres --dbname=postgres --format=custom \
   > "$work/database.dump"
 compose exec -T --user 0 db tar -czf - -C /etc/postgresql-custom . \
   > "$work/db-config.tar.gz"

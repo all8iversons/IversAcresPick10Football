@@ -8,13 +8,21 @@ private Compose network.
 ## LAN access
 
 - Set `APP_BIND_IP`, `APP_PORT`, `GATEWAY_BIND_IP`, and `KONG_HTTP_PORT` in
-  `.env.unraid`. Use ports that are available on the Unraid host.
+  `.env.unraid`. These are host-side app/gateway ports; for example, use
+  `APP_PORT=3010` and `KONG_HTTP_PORT=8001` when those are the available LAN
+  ports. `KONG_HTTP_PORT` is a legacy setting name and publishes the Envoy
+  `api-gw` service's HTTP port.
 - Set `SITE_URL` and `ADDITIONAL_REDIRECT_URLS` to the app origin and
   `/auth/callback`; set `SUPABASE_PUBLIC_URL` and `API_EXTERNAL_URL` to the
   gateway origin participants can reach.
 - Keep `SUPABASE_INTERNAL_URL=http://api-gw:8000` for server-to-gateway
   traffic on the Compose network. Do not substitute the participant URL for
   this internal address without a deliberate network design.
+- `POSTGRES_INTERNAL_PORT` is different from any host-published database
+  port. Set it to the port on which PostgreSQL actually listens inside the
+  `db` container; the deployment default is `5432`. Confirm an unusual
+  setting using the database health check or `pg_isready` inside the
+  container. The migration, backup, and restore tools use this value.
 - If a port is already in use, select another host port, update every
   corresponding public origin, validate Compose interpolation, and recreate
   the affected services.
@@ -26,7 +34,10 @@ private Compose network.
 - Verify published ports with `docker ps --format '{{.Names}} {{.Ports}}'`.
   The only participant-facing mappings should be the app and gateway HTTP
   ports. The override removes upstream PostgreSQL and Supavisor mappings and
-  does not publish the gateway's direct HTTPS port.
+  does not publish the gateway's direct HTTPS port. Avoid publishing
+  PostgreSQL directly to the LAN; if temporary database administration access
+  is necessary, restrict it to a trusted management network and remove it
+  afterward.
 
 Do not configure router port forwarding to the Unraid host as a substitute
 for a reverse proxy. Unraid management, PostgreSQL, Supavisor, Studio, and

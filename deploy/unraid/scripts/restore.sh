@@ -29,6 +29,16 @@ SUPABASE_RELEASE=$(read_setting SUPABASE_RELEASE "$DEPLOYMENT_DIR/.env.unraid")
 APP_IMAGE=$(read_setting APP_IMAGE "$DEPLOYMENT_DIR/.env.unraid")
 SUPABASE_POSTGRES_DATA_PATH=$(read_setting SUPABASE_POSTGRES_DATA_PATH "$DEPLOYMENT_DIR/.env.unraid")
 SUPABASE_STORAGE_PATH=$(read_setting SUPABASE_STORAGE_PATH "$DEPLOYMENT_DIR/.env.unraid")
+POSTGRES_INTERNAL_PORT=$(
+  awk -F= '
+    $1 == "POSTGRES_INTERNAL_PORT" {
+      sub(/\r$/, "", $2)
+      print $2
+      exit
+    }
+  ' "$DEPLOYMENT_DIR/.env.unraid"
+)
+POSTGRES_INTERNAL_PORT=${POSTGRES_INTERNAL_PORT:-5432}
 
 for path in "$APP_SOURCE_PATH" "$SUPABASE_DOCKER_DIR" "$DEPLOYMENT_DIR" \
   "$SUPABASE_POSTGRES_DATA_PATH" "$SUPABASE_STORAGE_PATH"; do
@@ -36,6 +46,8 @@ for path in "$APP_SOURCE_PATH" "$SUPABASE_DOCKER_DIR" "$DEPLOYMENT_DIR" \
 done
 [[ -f "$APP_SOURCE_PATH/deploy/unraid/compose.unraid.yaml" ]] ||
   fail "Unraid Compose override was not found in the app checkout."
+[[ "$POSTGRES_INTERNAL_PORT" =~ ^[0-9]+$ ]] ||
+  fail "POSTGRES_INTERNAL_PORT must be a numeric container port."
 [[ -d "$APP_SOURCE_PATH" ]] || fail "Application checkout was not found."
 [[ -d "$SUPABASE_POSTGRES_DATA_PATH" ]] || mkdir -p "$SUPABASE_POSTGRES_DATA_PATH"
 [[ -d "$SUPABASE_STORAGE_PATH" ]] || mkdir -p "$SUPABASE_STORAGE_PATH"
@@ -157,7 +169,8 @@ compose run --rm --no-deps --user 0 -v "$work:/pick10-restore:ro" \
 
 restore_needed=1
 compose up -d --wait db
-compose exec -T db pg_restore --username=postgres --dbname=postgres \
+compose exec -T db pg_restore --port="$POSTGRES_INTERNAL_PORT" \
+  --username=postgres --dbname=postgres \
   --clean --if-exists --no-owner --exit-on-error < "$work/database.dump"
 tar --numeric-owner -xzf "$work/storage.tar.gz" -C "$SUPABASE_STORAGE_PATH"
 compose stop db

@@ -7,7 +7,9 @@ archive is encrypted with GPG AES-256. Store it outside the live database/Storag
 paths and protect the passphrase separately.
 
 The procedures require Bash, Docker Compose, GNU-compatible `tar`/`gzip`,
-`awk`, and GPG on the Unraid host. Back up before any app or Supabase update.
+`awk`, and GPG on the Unraid host. If `gpg` is unavailable, install it through
+a supported Unraid package/plugin before backing up; do not bypass encryption.
+Back up before any app or Supabase update.
 
 ## Create a backup
 
@@ -21,6 +23,12 @@ export DEPLOYMENT_DIR=/mnt/user/appdata/ivers-acres-pick10/deployment
 export APP_SOURCE_PATH=/mnt/user/appdata/ivers-acres-pick10/source
 bash /mnt/user/appdata/ivers-acres-pick10/source/deploy/unraid/scripts/backup.sh
 ```
+
+The exports and script must run in the same shell session; shell variables do
+not persist when a new WebTerminal session is opened. Set
+`POSTGRES_INTERNAL_PORT` in `.env.unraid` to the port PostgreSQL listens on
+inside the `db` container (default `5432`). It may differ from both the
+published Unraid host port and the upstream default.
 
 The script requires running app, PostgreSQL, and Storage services. It pauses
 all running services except PostgreSQL to prevent app and file writes while it

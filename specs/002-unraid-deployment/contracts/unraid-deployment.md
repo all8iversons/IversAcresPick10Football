@@ -27,6 +27,7 @@ Compose Manager Plus is a community plugin, not an official Unraid component. It
 | PostgreSQL password and JWT signing secret/key material | Yes | Secret | Generated and protected for the pinned upstream Supabase release; must be included in protected recovery configuration. |
 | Supabase dashboard credentials | Yes when Studio is enabled | Secret | Protect Studio access; Studio is not host-published by default. |
 | Supabase data paths | Yes | Unraid paths | Host paths for PostgreSQL and file-backed Storage under persistent appdata/SSD-backed pool storage. |
+| `POSTGRES_INTERNAL_PORT` | No | Private runtime value | Port PostgreSQL listens on inside the `db` container; defaults to `5432` and is used by migrations and backup/restore. It is not the host-published port. |
 | Supabase release | Yes | Version | Pinned upstream `self-hosted/v*` release, reviewed before changing. |
 | App image tag | Yes | Version | Immutable version tag or digest; never a floating production tag. |
 
