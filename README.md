@@ -31,7 +31,7 @@ npm run dev
 ```
 
 Open `http://localhost:3000`. New participants can create an account, create a
-private league, and share the invite code shown once at league creation. The
+private league, and copy its invite code anytime from the leagues list. The
 current NFL schedule is fetched server-side and cached; automated tests use
 static fixtures and do not call ESPN.
 

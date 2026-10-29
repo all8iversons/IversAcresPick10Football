@@ -72,13 +72,94 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const now = Date.now();
+    const isLocked = now >= Date.parse(schedule.week.deadlineUtc);
+    let otherEntries: {
+      participantId: string;
+      participantName: string;
+      picks: { gameId: string; selectedTeamId: string }[];
+    }[] = [];
+
+    if (isLocked) {
+      const entriesResult = await supabase
+        .from("weekly_entries")
+        .select("id, participant_id")
+        .eq("league_id", leagueId)
+        .eq("week_id", schedule.week.id)
+        .neq("participant_id", user.id);
+      if (entriesResult.error) {
+        throw new HttpError(
+          500,
+          "ENTRIES_UNAVAILABLE",
+          entriesResult.error.message,
+        );
+      }
+
+      if (entriesResult.data.length > 0) {
+        const entryIds = entriesResult.data.map((entry) => entry.id);
+        const participantIds = [
+          ...new Set(entriesResult.data.map((entry) => entry.participant_id)),
+        ];
+        const [picksResult, profilesResult] = await Promise.all([
+          supabase
+            .from("team_picks")
+            .select("entry_id, game_id, selected_team_id")
+            .in("entry_id", entryIds),
+          supabase
+            .from("profiles")
+            .select("id, display_name")
+            .in("id", participantIds),
+        ]);
+        if (picksResult.error) {
+          throw new HttpError(
+            500,
+            "ENTRIES_UNAVAILABLE",
+            picksResult.error.message,
+          );
+        }
+        if (profilesResult.error) {
+          throw new HttpError(
+            500,
+            "PARTICIPANTS_UNAVAILABLE",
+            profilesResult.error.message,
+          );
+        }
+
+        const nameByParticipant = new Map(
+          profilesResult.data.map((profile) => [
+            profile.id,
+            profile.display_name.trim() || "League member",
+          ]),
+        );
+        const picksByEntry = new Map<
+          string,
+          { gameId: string; selectedTeamId: string }[]
+        >();
+        for (const pick of picksResult.data) {
+          const entryPicks = picksByEntry.get(pick.entry_id) ?? [];
+          entryPicks.push({
+            gameId: pick.game_id,
+            selectedTeamId: pick.selected_team_id,
+          });
+          picksByEntry.set(pick.entry_id, entryPicks);
+        }
+
+        otherEntries = entriesResult.data.map((entry) => ({
+          participantId: entry.participant_id,
+          participantName:
+            nameByParticipant.get(entry.participant_id) ?? "League member",
+          picks: picksByEntry.get(entry.id) ?? [],
+        }));
+      }
+    }
+
     return jsonOk({
       week: {
         ...schedule.week,
-        isLocked: now >= Date.parse(schedule.week.deadlineUtc),
+        isLocked,
       },
       games: schedule.games,
       myEntry,
+      otherEntries,
     });
   } catch (error) {
     if (error instanceof ScheduleUnavailableError) {

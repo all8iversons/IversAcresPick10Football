@@ -34,7 +34,12 @@ describe("league API authentication and isolation boundary", () => {
 
   it("does not expose leagues without a matching membership", async () => {
     const visibleLeagues = [
-      { id: "league-a", name: "League A", created_at: "2026-01-01T00:00:00Z" },
+      {
+        id: "league-a",
+        name: "League A",
+        invite_code: "league-a-invite-code",
+        created_at: "2026-01-01T00:00:00Z",
+      },
     ];
     const memberships = [{ league_id: "league-a", role: "owner" }];
     const supabase = {
@@ -68,6 +73,7 @@ describe("league API authentication and isolation boundary", () => {
         {
           id: "league-a",
           name: "League A",
+          inviteCode: "league-a-invite-code",
           role: "owner",
           createdAt: "2026-01-01T00:00:00Z",
         },

@@ -20,6 +20,8 @@ export function WeeklyPicksClient({
     week,
     games,
     picks,
+    otherEntries,
+    otherEntriesLoaded,
     loading,
     saving,
     submitted,
@@ -94,6 +96,38 @@ export function WeeklyPicksClient({
             Picks are locked for this week. Entries cannot be changed after
             kickoff.
           </p>
+        )}
+        {isLocked && (
+          <section className="stack" aria-labelledby="league-picks-heading">
+            <h2 id="league-picks-heading">League picks</h2>
+            {!otherEntriesLoaded ? (
+              <p className="muted" role="status">
+                Loading league picks...
+              </p>
+            ) : otherEntries.length === 0 ? (
+              <p className="muted">No other league picks were submitted.</p>
+            ) : (
+              otherEntries.map((entry) => (
+                <article className="card stack" key={entry.participantId}>
+                  <h3>{entry.participantName}</h3>
+                  <ul>
+                    {entry.picks.map((pick) => {
+                      const game = games.find(
+                        (scheduledGame) => scheduledGame.id === pick.gameId,
+                      );
+                      const selectedTeam =
+                        game?.homeTeam.id === pick.selectedTeamId
+                          ? game.homeTeam.name
+                          : game?.awayTeam.id === pick.selectedTeamId
+                            ? game.awayTeam.name
+                            : "Unknown team";
+                      return <li key={pick.gameId}>{selectedTeam}</li>;
+                    })}
+                  </ul>
+                </article>
+              ))
+            )}
+          </section>
         )}
         {error && (
           <p className="error" role="alert">

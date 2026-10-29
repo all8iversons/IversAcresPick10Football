@@ -86,7 +86,7 @@ export function LeagueForm({ onCreated }: LeagueFormProps) {
         <p role="status">
           Share this invite code with your league: <strong>{inviteCode}</strong>
           <br />
-          It will only be shown this time.
+          You can copy it again anytime from your leagues list.
         </p>
       )}
     </form>

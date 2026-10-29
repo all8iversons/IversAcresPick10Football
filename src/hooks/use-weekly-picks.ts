@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { GameMatchup, NflWeek, UserPick } from "@/domain/types";
 import { z } from "zod";
@@ -53,11 +53,26 @@ const weekResponseSchema = z.object({
       ),
     })
     .nullable(),
+  otherEntries: z.array(
+    z.object({
+      participantId: z.string(),
+      participantName: z.string(),
+      picks: z.array(
+        z.object({
+          gameId: z.string(),
+          selectedTeamId: z.string(),
+        }),
+      ),
+    }),
+  ),
 });
+
+type OtherEntry = z.infer<typeof weekResponseSchema>["otherEntries"][number];
 
 interface WeekResponse {
   week: NflWeek & { isLocked: boolean };
   games: GameMatchup[];
+  otherEntries: OtherEntry[];
   myEntry: {
     id: string;
     submittedAt: string;
@@ -69,6 +84,8 @@ interface UseWeeklyPicksResult {
   week: WeekResponse["week"] | null;
   games: GameMatchup[];
   picks: UserPick[];
+  otherEntries: OtherEntry[];
+  otherEntriesLoaded: boolean;
   loading: boolean;
   saving: boolean;
   submitted: boolean;
@@ -88,11 +105,14 @@ export function useWeeklyPicks(
   const [week, setWeek] = useState<WeekResponse["week"] | null>(null);
   const [games, setGames] = useState<GameMatchup[]>([]);
   const [picks, setPicks] = useState<UserPick[]>([]);
+  const [otherEntries, setOtherEntries] = useState<OtherEntry[]>([]);
+  const [otherEntriesLoaded, setOtherEntriesLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState<number | null>(null);
+  const revealRequestedFor = useRef<string | null>(null);
 
   const endpoint = `/api/leagues/${encodeURIComponent(leagueId)}/weeks/${season}/${weekNumber}`;
 
@@ -127,6 +147,8 @@ export function useWeeklyPicks(
         setWeek(result.week);
         setGames(result.games);
         setPicks(result.myEntry?.picks ?? []);
+        setOtherEntries(result.otherEntries);
+        setOtherEntriesLoaded(result.week.isLocked);
         setSubmitted(result.myEntry !== null);
         setError(null);
       })
@@ -146,6 +168,40 @@ export function useWeeklyPicks(
       active = false;
     };
   }, [endpoint, router]);
+
+  useEffect(() => {
+    if (
+      !week ||
+      week.isLocked ||
+      now === null ||
+      now < Date.parse(week.deadlineUtc) ||
+      revealRequestedFor.current === endpoint
+    ) {
+      return;
+    }
+
+    revealRequestedFor.current = endpoint;
+    fetch(endpoint)
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(
+            `League picks could not be loaded (${response.status}).`,
+          );
+        }
+        return weekResponseSchema.parse(await response.json());
+      })
+      .then((result) => {
+        if (revealRequestedFor.current !== endpoint) return;
+        setWeek(result.week);
+        setOtherEntries(result.otherEntries);
+        setOtherEntriesLoaded(true);
+      })
+      .catch((caught: unknown) => {
+        if (revealRequestedFor.current !== endpoint) return;
+        console.error("Loading league picks after lockout failed", caught);
+        setError("Other league picks could not be loaded. Please refresh.");
+      });
+  }, [endpoint, now, week]);
 
   const selectedByGame = useMemo(
     () => new Map(picks.map((pick) => [pick.gameId, pick.selectedTeamId])),
@@ -226,6 +282,8 @@ export function useWeeklyPicks(
     week,
     games,
     picks,
+    otherEntries,
+    otherEntriesLoaded,
     loading,
     saving,
     submitted,
