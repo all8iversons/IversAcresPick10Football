@@ -26,7 +26,7 @@ private Compose network.
 - Verify published ports with `docker ps --format '{{.Names}} {{.Ports}}'`.
   The only participant-facing mappings should be the app and gateway HTTP
   ports. The override removes upstream PostgreSQL and Supavisor mappings and
-  does not publish Kong's direct HTTPS port.
+  does not publish the gateway's direct HTTPS port.
 
 Do not configure router port forwarding to the Unraid host as a substitute
 for a reverse proxy. Unraid management, PostgreSQL, Supavisor, Studio, and

@@ -72,9 +72,11 @@ the populated environment files and Supabase data stay outside Git.
    origin and callback. Set `SUPABASE_PUBLIC_URL` and `API_EXTERNAL_URL` to
    the gateway origin participants can reach. These values must not be
    `localhost` for participants connecting from another device.
-3. Configure `APP_PORT` and `KONG_HTTP_PORT` to available LAN ports. The app
-   uses `http://api-gw:8000` on the private Compose network by default; keep
-   that internal URL separate from the participant-facing gateway URL.
+3. Configure `APP_PORT` and `KONG_HTTP_PORT` to available LAN ports. Despite
+   the legacy setting name, `KONG_HTTP_PORT` configures the Envoy gateway's
+   published HTTP port. The app uses `http://api-gw:8000` on the private
+   Compose network by default; keep that internal URL separate from the
+   participant-facing gateway URL.
 4. Verify that `SUPABASE_RELEASE` matches the checked-out upstream tag and
    that both data paths point to the SSD-backed locations. The upstream
    Compose file mounts PostgreSQL at
