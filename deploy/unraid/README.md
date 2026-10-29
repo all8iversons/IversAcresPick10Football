@@ -135,10 +135,12 @@ dc ps
 
 The `migrate` profile runs the pinned Supabase CLI against
 `db:${POSTGRES_INTERNAL_PORT:-5432}` on the private Compose network. It uses
-`supabase db push` and the repository's
-migration history; do not start an app release with unapplied migrations. The
-profile downloads the pinned CLI package and its Linux platform binary from npm
-when invoked, so the Unraid host needs outbound access to the npm registry.
+`supabase db push` and the repository's migration history, with TLS disabled
+for this internal connection because the Supabase database container does not
+accept TLS. Do not expose this database connection outside the trusted Docker
+network. Do not start an app release with unapplied migrations. The profile
+downloads the pinned CLI package and its Linux platform binary from npm when
+invoked, so the Unraid host needs outbound access to the npm registry.
 The persistent-invite-code migration creates new codes for existing leagues;
 current memberships stay intact, but previously shared invite codes stop
 working and should be shared again from the leagues page.

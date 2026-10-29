@@ -54,7 +54,7 @@ services:
       - db
       - push
       - --db-url
-      - postgres://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the protected Supabase environment}@db:${POSTGRES_INTERNAL_PORT:-5432}/${POSTGRES_DB:-postgres}
+      - postgres://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the protected Supabase environment}@db:${POSTGRES_INTERNAL_PORT:-5432}/${POSTGRES_DB:-postgres}?sslmode=disable
       - --yes
     volumes:
       - ${APP_SOURCE_PATH:?Set APP_SOURCE_PATH to the application checkout}/supabase:/workspace/supabase:ro
