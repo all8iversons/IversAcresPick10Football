@@ -84,7 +84,7 @@ conflicting, and late submissions fail without partial writes.
 - [X] T026 [US2] Implement the server-only `NFLScheduleService` interface and ESPN adapter requesting explicit season, regular-season type, week, and event limit; validate response season/week and normalize provider payloads in `src/services/nfl/NFLScheduleService.ts` and `src/services/nfl/espn/ESPNNFLScheduleService.ts`.
 - [X] T027 [US2] Implement database-backed schedule caching, refresh timestamps, stale/unavailable reporting, and normalized upsert behavior in `src/services/nfl/schedule-cache.ts` and `src/services/nfl/schedule-refresh.ts`.
 - [X] T028 [US2] Implement UTC deadline derivation using the venue-local Thursday slate, reliable TNF metadata when available, documented latest-Thursday kickoff fallback otherwise, and earliest weekly kickoff when Thursday games are absent in `src/domain/deadline.ts`.
-- [X] T029 [US2] Create weekly-entry and team-pick tables with these exact rules: Entry `id`: "Primary identifier"; `leagueId`, `participantId`, and `weekId`: "Required"; `participantId`: "must be a league member"; `weekId`: "active regular-season week"; `submittedAt`: "Set on successful creation or replacement"; `updatedAt`: "Updated on valid replacement"; unique `(leagueId, participantId, weekId)`; a submitted entry is replaceable only before deadline and immutable at/after deadline; Pick `entryId`: "Required"; `gameId`: "Required; part of composite uniqueness"; `selectedTeamId`: "Must equal that game's home or away team"; `pointsAwarded`: "Null until final; 1.0 for win, 0.0 for loss, 0.5 for final tie"; unique `(entryId, gameId)` and require exactly 10 picks from the entry's week in `supabase/migrations/00000000000004_weekly_entries.sql`.
+- [X] T029 [US2] Create weekly-entry and team-pick tables with these exact rules: Entry `id`: "Primary identifier"; `leagueId`, `participantId`, and `weekId`: "Required"; `participantId`: "must be a league member"; `weekId`: "active regular-season week"; `submittedAt`: "Set on successful creation or replacement"; `updatedAt`: "Updated on valid replacement"; unique `(leagueId, participantId, weekId)`; a submitted entry is replaceable only before deadline and immutable at/after deadline; Pick `entryId`: "Required"; `gameId`: "Required; part of composite uniqueness"; `selectedTeamId`: "Must equal that game's home or away team"; `pointsAwarded`: "Null until final; 1 point for a correct pick, 0 for an incorrect pick, and 0.5 for a pick in a final tie"; unique `(entryId, gameId)` and require exactly 10 picks from the entry's week in `supabase/migrations/00000000000004_weekly_entries.sql`.
 - [X] T030 [US2] Implement server-side pick validation for exactly 10 unique games, one valid participating team per game, and all games in the requested week in `src/domain/validate-picks.ts` and `src/lib/validation/pick-request.ts`.
 - [X] T031 [US2] Implement a database transaction/RPC that checks the authenticated member, compares database current time with the stored UTC deadline, replaces the participant's 10 picks atomically, and rejects all writes at or after lockout in `supabase/migrations/00000000000005_submit_weekly_entry.sql`.
 - [X] T032 [US2] Implement member-authorized week and pick `GET`/`PUT` route handlers using the documented response/error shapes and server-only cached schedule reads in `src/app/api/leagues/[leagueId]/weeks/[season]/[weekNumber]/route.ts` and `src/app/api/leagues/[leagueId]/weeks/[season]/[weekNumber]/picks/route.ts`.
@@ -102,22 +102,23 @@ conflicting, and late submissions fail without partial writes.
 and standard competition ranks.
 
 **Independent Test**: Load final win, loss, and tie fixtures and multiple league
-entries; verify 1.0/0.0/0.5 scoring, league-scoped weekly and season totals, and
+entries; verify 1/0/0.5 scoring, league-scoped weekly and season totals, and
 1, 1, 3 tie ranks.
 
 ### Tests for User Story 3
 
-- [X] T037 [P] [US3] Add scoring unit tests for winning picks at 1.0, losing picks at 0.0, either selected team in a final tie at 0.5, and non-final games remaining unscored in `tests/unit/scoring.test.ts`.
+- [X] T037 [P] [US3] Add scoring unit tests for winning picks at 1 point, losing picks at 0 points, tied-game picks at 0.5 points, and non-final games remaining unscored in `tests/unit/scoring.test.ts`.
 - [ ] T038 [P] [US3] Add integration tests for league-scoped weekly/season totals, standard competition ranks, hidden pre-deadline picks, and non-member denial in `tests/integration/standings.test.ts`.
 
 ### Implementation for User Story 3
 
-- [X] T039 [US3] Implement scoring only for final games with valid scores; classify ties only when final scores are equal and calculate 1.0/0.0/0.5 outcomes in `src/domain/scoring.ts` and `src/services/scoring/score-final-games.ts`.
+- [X] T039 [US3] Implement scoring only for final games with valid scores; classify ties only when final scores are equal and calculate 1/0/0.5 outcomes in `src/domain/scoring.ts` and `src/services/scoring/score-final-games.ts`.
 - [X] T040 [US3] Implement league-scoped weekly totals and season totals across completed weeks with standard competition ranking in `src/services/standings/standings-service.ts`.
 - [X] T041 [US3] Implement member-authorized standings and pick-visibility route behavior, hiding other members' picks before the weekly deadline and exposing standings in `src/app/api/leagues/[leagueId]/standings/route.ts`.
 - [ ] T042 [P] [US3] Implement accessible weekly and season leaderboard table views with explicit empty/loading/error states in `src/components/leaderboard/LeaderboardTable.tsx`.
 - [X] T043 [US3] Implement league weekly/season standings pages and navigation to a participant's own scored entry in `src/app/leagues/[leagueId]/standings/page.tsx` and `src/app/leagues/[leagueId]/weeks/[season]/[weekNumber]/results/page.tsx`.
 - [ ] T044 [US3] Run scoring, standings, row-level privacy, and browser-result tests against win/loss/tie fixtures and disjoint league memberships in `tests/unit/scoring.test.ts`, `tests/integration/standings.test.ts`, and `tests/e2e/standings.spec.ts`.
+- [X] T045 [US3] Implement tested weekly and season-end payout calculations for externally supplied pot amounts, including weekly rollover and tied winners, in `src/domain/payouts.ts` and `tests/unit/scoring.test.ts`.
 
 **Checkpoint**: Final results are scored correctly and members see accurate
 league-specific weekly and season standings, including tied ranks.

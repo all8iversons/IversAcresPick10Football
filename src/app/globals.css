@@ -169,6 +169,28 @@ a:focus-visible {
   min-height: 2.4rem;
 }
 
+.week-navigation-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.week-navigation-heading h2 {
+  margin: 0;
+}
+
+.week-link-selected {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.week-link-current:not(.week-link-selected) {
+  border-color: var(--gold-dark);
+  background: var(--purple-dark);
+}
+
 .form-field {
   display: grid;
   gap: 0.4rem;

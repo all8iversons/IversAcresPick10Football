@@ -124,7 +124,7 @@ Represents one selected team in an entry.
 | `entryId` | Weekly Entry ID | Required. |
 | `gameId` | Game Matchup ID | Required; part of composite uniqueness. |
 | `selectedTeamId` | String | Must equal that game's home or away team. |
-| `pointsAwarded` | Decimal nullable | Null until final; 1.0 for win, 0.0 for loss, 0.5 for final tie. |
+| `pointsAwarded` | Decimal nullable | Null until final; 1.0 for a selected winner, 0.0 for a loss, and 0.5 for either selected team in a final tie. |
 
 Uniqueness: one pick per `(entryId, gameId)` and no duplicate selected team.
 Exactly 10 picks are required for an accepted entry. Picks must reference games
@@ -147,3 +147,15 @@ on read or materialized with a freshness policy.
 Standings are league-specific. Before a week deadline, participants may see
 their own picks; other members' picks remain hidden. After the deadline, entries
 may be visible to league members.
+
+## Payout Calculations
+
+Pot funding and payment processing are managed outside the application. A
+weekly payout calculation accepts the externally supplied pot amount and each
+participant's weekly score (0 through 10, in half-point increments). A perfect
+score shares the full pot; otherwise, the highest score of at least 9 shares
+half the pot and carries the other half forward; lower scores carry the full pot
+forward. At season end, the remaining balance is split equally among
+participants tied for the highest season points. The calculation reports
+payout allocations and rollover balances but does not persist or transfer
+money.

@@ -65,21 +65,26 @@ runnable as those implementation tasks are completed.
    Verify classification uses local schedule metadata and stores a UTC
    deadline.
 6. **Scoring**: Finalize fixture games as home win, away win, and tie; confirm
-   correct picks score 1.0, incorrect picks 0.0, and either team picked in a
-   tie scores 0.5. Confirm non-final games remain unscored.
+   correct picks score 1 point, incorrect picks 0, picks in a tie 0.5, and
+   non-final games remain unscored.
 7. **Privacy**: Create two leagues with disjoint membership. Verify non-members
    cannot read private entries or standings; own picks remain visible before
    lockout while other members' picks stay hidden until lockout.
 8. **Submission status and history**: Before lockout, verify league members can
    see who submitted and refresh the status without seeing other members'
-   picks. Navigate to a prior week and verify submitted league picks are shown
-   only after that week's deadline and only to league members.
+   picks. Use the week selector to navigate between week 1 and the current week,
+   including returning to the current week from a prior week. Verify submitted
+   league picks are shown only after that week's deadline and only to league
+   members.
 9. **Rankings**: Verify weekly and season totals include only the selected
    league, equal totals use standard competition ranks, and season totals sum
    completed weeks.
 10. **Accessibility**: Complete pick review and submission with keyboard-only
    navigation and an assistive-technology smoke test; check labels, focus,
    errors, selection count, lockout, and submission announcements.
+11. **Payouts**: Verify a perfect score splits the full pot; a 9-point high
+   score splits half and rolls over half; scores of 8 or lower roll over the
+   full pot; and tied season leaders split the remaining balance.
 
 ## Automated commands
 

@@ -110,6 +110,13 @@ ranks and season totals.
    ranks.
 4. **Given** a participant is not a member of a league, **When** they request
    that league's standings, **Then** its standings are not shown to them.
+5. **Given** the weekly pot and all participants' scores, **When** the weekly
+   payout is calculated, **Then** perfect scores split the full pot; absent a
+   perfect score, 9-point scores split half the pot and the other half rolls
+   over; otherwise the full pot rolls over.
+6. **Given** a remaining season-end pot and season standings, **When** the
+   season payout is calculated, **Then** the participant or participants tied
+   for the highest season score split the remaining pot.
 
 ---
 
@@ -142,6 +149,9 @@ are visible only to league members.
    views it, **Then** other participants' selected teams remain hidden.
 5. **Given** a participant who is not a member of a league, **When** they try
    to access submission status or historical picks, **Then** access is denied.
+6. **Given** any week in the current season, **When** a member uses week
+   navigation, **Then** all weeks from week 1 through the current week are
+   selectable, and a direct link returns them to the current week.
 
 ### Edge Cases
 
@@ -160,8 +170,8 @@ are visible only to league members.
 - A participant attempts to submit or modify picks at the exact deadline or
   after it.
 - A finished NFL game ends in a tie, or a game has not yet reached a final
-  result; the former scores half a point for either selected side, while the
-  latter is not scored as final.
+  result; neither selected side is a correct winner pick in a tie and earns
+  zero points, while an unfinished game remains unscored.
 - A user attempts to access a private league, entry, or leaderboard without
   membership.
 
@@ -216,10 +226,25 @@ are visible only to league members.
   has submitted a weekly entry, without exposing other participants' pick
   selections before that week's deadline.
 - **FR-019**: The system MUST allow league members to navigate to previous
-  regular-season weeks in the current season and review submitted league picks
-  only after the selected week's deadline.
+  regular-season weeks in the current season, select any week up to and
+  including the current week, and review submitted league picks only after the
+  selected week's deadline.
 - **FR-020**: The system MUST restrict submission status and historical picks
   to members of the corresponding league.
+- **FR-021**: The system MUST calculate a weekly score as the sum of pick
+  points, from 0 to 10 (including half-points for final ties), and include
+  those points in season standings.
+- **FR-022**: Given a weekly pot amount and participant scores, the system MUST
+  award the full pot to participants scoring 10, split equally; if there is no
+  perfect score but one or more participants score at least 9, it MUST award
+  half the pot to those with the highest score equally and roll over the other
+  half; otherwise it MUST roll over the full pot.
+- **FR-023**: Given the remaining pot and season scores, the system MUST award
+  the balance to the participant or participants tied for the highest season
+  points, split equally.
+- **FR-024**: Pot funding and payment processing are outside the system; payout
+  calculations MUST accept externally supplied pot amounts and report each
+  payout and rollover amount.
 
 ### Key Entities
 
@@ -249,12 +274,15 @@ are visible only to league members.
   the deadline are rejected, and the participant is shown that picks are locked.
 - **SC-003**: 100% of tested entries with fewer or more than 10 picks, duplicate
   teams, or both teams from one game are rejected before saving.
-- **SC-004**: 100% of tested winning, losing, and tied-game picks receive
-  1.0, 0.0, and 0.5 points respectively.
+- **SC-004**: 100% of tested winning, losing, and tied-game picks receive 1,
+  0, and 0.5 points respectively.
 - **SC-005**: 100% of tested weekly and season standings reflect league-scoped
   totals and standard competition ranks for ties.
 - **SC-006**: At least 90% of usability-test participants rate the clarity of
   the pick count, deadline, and submission status 4 or 5 on a 5-point scale.
+- **SC-007**: 100% of tested weekly and season payout calculations award the
+  specified shares, roll over the specified balances, and split tied awards
+  equally.
 
 ## Assumptions
 
@@ -270,8 +298,10 @@ are visible only to league members.
   kickoff, falling back to the earliest kickoff in weeks without a Thursday
   game. The deadline is inclusive for lockout: submissions are closed at the
   kickoff instant.
-- Game results are used for scoring only after they are final. A tied final
-  result awards half a point for a pick of either team.
+- Game results are used for scoring only after they are final. A winning pick
+  earns 1 point, a losing pick earns 0, and a pick in a final tie earns 0.5.
+- Pot amounts are funded and managed outside the application. Payout
+  calculations accept the supplied amount but do not collect or transfer money.
 - Schedule and status information comes from the current external NFL schedule
   source; live data may be temporarily unavailable.
 - Participants may access the website from desktop and mobile browsers.

@@ -9,12 +9,14 @@ interface WeeklyPicksClientProps {
   leagueId: string;
   season: number;
   weekNumber: number;
+  currentWeek: { season: number; weekNumber: number } | null;
 }
 
 export function WeeklyPicksClient({
   leagueId,
   season,
   weekNumber,
+  currentWeek,
 }: WeeklyPicksClientProps) {
   const {
     week,
@@ -93,25 +95,55 @@ export function WeeklyPicksClient({
           </p>
         </div>
 
-        <nav className="card stack" aria-labelledby="previous-weeks-heading">
-          <h2 id="previous-weeks-heading">Previous weeks</h2>
-          {week.weekNumber === 1 ? (
-            <p className="muted">No previous weeks are available this season.</p>
-          ) : (
-            <div className="week-links">
-              {Array.from({ length: week.weekNumber - 1 }, (_, index) => {
-                const previousWeek = week.weekNumber - index - 1;
+        <nav className="card stack" aria-labelledby="week-navigation-heading">
+          <div className="week-navigation-heading">
+            <h2 id="week-navigation-heading">Weeks</h2>
+            {(!currentWeek ||
+              week.season !== currentWeek.season ||
+              week.weekNumber !== currentWeek.weekNumber) && (
+              <Link
+                className="button"
+                href={`/leagues/${leagueId}/weeks/current`}
+              >
+                Back to current week
+              </Link>
+            )}
+          </div>
+          <div className="week-links">
+            {Array.from(
+              {
+                length:
+                  currentWeek?.season === week.season
+                    ? currentWeek.weekNumber
+                    : week.season < (currentWeek?.season ?? week.season)
+                      ? 18
+                      : week.weekNumber,
+              },
+              (_, index) => {
+                const selectableWeek = index + 1;
+                const isCurrent =
+                  currentWeek?.season === week.season &&
+                  selectableWeek === currentWeek.weekNumber;
+                const isSelected = selectableWeek === week.weekNumber;
                 return (
                   <Link
-                    className="button"
-                    href={`/leagues/${leagueId}/weeks/${week.season}/${previousWeek}`}
-                    key={previousWeek}
+                    aria-current={isSelected ? "page" : undefined}
+                    className={`button${isSelected ? " week-link-selected" : ""}${isCurrent ? " week-link-current" : ""}`}
+                    href={`/leagues/${leagueId}/weeks/${week.season}/${selectableWeek}`}
+                    key={selectableWeek}
                   >
-                    Week {previousWeek}
+                    Week {selectableWeek}
+                    {isCurrent ? " (Current)" : ""}
                   </Link>
                 );
-              })}
-            </div>
+              },
+            )}
+          </div>
+          {!currentWeek && (
+            <p className="muted">
+              The current-week schedule could not be loaded. Use the current
+              week shortcut to return to the active week.
+            </p>
           )}
         </nav>
 
