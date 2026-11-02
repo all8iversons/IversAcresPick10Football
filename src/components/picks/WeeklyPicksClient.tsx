@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useWeeklyPicks } from "@/hooks/use-weekly-picks";
 import { MatchupRow } from "@/components/picks/MatchupRow";
 import { PickCount } from "@/components/picks/PickCount";
+import { PickResultsList } from "@/components/picks/PickResultsList";
 
 interface WeeklyPicksClientProps {
   leagueId: string;
@@ -94,6 +95,20 @@ export function WeeklyPicksClient({
               ` (last updated ${new Date(week.scheduleFetchedAt).toLocaleString()})`}
           </p>
         </div>
+
+        {isLocked && (
+          <section
+            className="card stack"
+            aria-labelledby="my-picks-heading"
+          >
+            <h2 id="my-picks-heading">Your picks</h2>
+            {picks.length === 0 ? (
+              <p className="muted">You did not submit picks for this week.</p>
+            ) : (
+              <PickResultsList picks={picks} games={games} />
+            )}
+          </section>
+        )}
 
         <nav className="card stack" aria-labelledby="week-navigation-heading">
           <div className="week-navigation-heading">
@@ -192,20 +207,7 @@ export function WeeklyPicksClient({
               otherEntries.map((entry) => (
                 <article className="card stack" key={entry.participantId}>
                   <h3>{entry.participantName}</h3>
-                  <ul>
-                    {entry.picks.map((pick) => {
-                      const game = games.find(
-                        (scheduledGame) => scheduledGame.id === pick.gameId,
-                      );
-                      const selectedTeam =
-                        game?.homeTeam.id === pick.selectedTeamId
-                          ? game.homeTeam.name
-                          : game?.awayTeam.id === pick.selectedTeamId
-                            ? game.awayTeam.name
-                            : "Unknown team";
-                      return <li key={pick.gameId}>{selectedTeam}</li>;
-                    })}
-                  </ul>
+                  <PickResultsList picks={entry.picks} games={games} />
                 </article>
               ))
             )}

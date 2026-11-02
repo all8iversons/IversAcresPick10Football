@@ -3,6 +3,7 @@ import { requireLeagueMember } from "@/lib/auth/require-league-member";
 import { errorResponse, HttpError } from "@/lib/http/errors";
 import { jsonOk } from "@/lib/http/responses";
 import { createSupabaseAdminClient } from "@/lib/db/supabase-admin";
+import { assignDefaultPicks } from "@/services/picks/assign-default-picks";
 import {
   ESPNNFLScheduleService,
   ScheduleUnavailableError,
@@ -36,6 +37,9 @@ export async function GET(_request: Request, context: RouteContext) {
       parsedParams.data.season,
       parsedParams.data.weekNumber,
     );
+    if (Date.now() >= Date.parse(schedule.week.deadlineUtc)) {
+      await assignDefaultPicks(leagueId, schedule.week.id);
+    }
     const entryResult = await supabase
       .from("weekly_entries")
       .select("id, submitted_at, updated_at")

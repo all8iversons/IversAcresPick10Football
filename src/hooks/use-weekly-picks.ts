@@ -212,6 +212,8 @@ export function useWeeklyPicks(
       .then((result) => {
         if (revealRequestedFor.current !== endpoint) return;
         setWeek(result.week);
+        setPicks(result.myEntry?.picks ?? []);
+        setSubmitted(result.myEntry !== null);
         setOtherEntries(result.otherEntries);
         setSubmissionStatuses(result.submissionStatuses);
         setOtherEntriesLoaded(true);

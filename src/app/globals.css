@@ -191,6 +191,83 @@ a:focus-visible {
   background: var(--purple-dark);
 }
 
+.pick-total {
+  margin: 0;
+}
+
+.pick-results {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.pick-result-win,
+.pick-result-loss,
+.pick-result-tie {
+  display: inline-block;
+  min-width: 1.25rem;
+  font-weight: 800;
+}
+
+.pick-result-win {
+  color: #1b7a34;
+}
+
+.pick-result-loss {
+  color: var(--danger);
+}
+
+.pick-result-tie {
+  color: var(--gold-dark);
+}
+
+.auth-center {
+  display: grid;
+  min-height: 100vh;
+  align-content: center;
+  justify-items: center;
+  gap: 1.25rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.auth-center .card {
+  width: min(100%, 26rem);
+  text-align: left;
+}
+
+.auth-center h1 {
+  max-width: none;
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 2.75rem);
+}
+
+.button-secondary {
+  border-color: var(--purple);
+  background: var(--surface);
+  color: var(--purple);
+}
+
+.button-secondary:hover {
+  background: var(--purple-soft);
+  color: var(--purple-dark);
+}
+
+.hero-centered {
+  text-align: center;
+}
+
+.hero-centered h1,
+.hero-centered .lead {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.hero-actions {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+}
+
 .form-field {
   display: grid;
   gap: 0.4rem;

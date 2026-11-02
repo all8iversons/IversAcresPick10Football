@@ -8,6 +8,7 @@ import {
   getWeeklyStandings,
 } from "@/services/standings/standings-service";
 import { scoreFinalGames } from "@/services/scoring/score-final-games";
+import { assignDefaultPicks } from "@/services/picks/assign-default-picks";
 import { ESPNNFLScheduleService } from "@/services/nfl/espn/ESPNNFLScheduleService";
 
 type RouteContext = {
@@ -46,6 +47,7 @@ export async function GET(request: Request, context: RouteContext) {
         parsed.data.season,
         parsed.data.weekNumber,
       );
+      await assignDefaultPicks(leagueId, schedule.week.id);
       await scoreFinalGames(schedule.week.id);
       const standings = await getWeeklyStandings(leagueId, schedule.week.id);
       return jsonOk({
@@ -66,6 +68,7 @@ export async function GET(request: Request, context: RouteContext) {
       throw new HttpError(500, "STANDINGS_UNAVAILABLE", weeks.error.message);
     }
     for (const week of weeks.data) {
+      await assignDefaultPicks(leagueId, week.id);
       await scoreFinalGames(week.id);
     }
     const standings = await getSeasonStandings(leagueId, parsed.data.season);

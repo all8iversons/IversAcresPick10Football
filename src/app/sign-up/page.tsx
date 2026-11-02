@@ -3,7 +3,7 @@ import { SignUpForm } from "@/components/auth/SignUpForm";
 
 export default function SignUpPage() {
   return (
-    <main className="content stack">
+    <main className="content auth-center">
       <Link href="/" className="brand">
         Ivers Acres Pick 10
       </Link>

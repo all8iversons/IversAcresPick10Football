@@ -142,10 +142,6 @@ export function LeagueDashboard() {
             {error}
           </p>
         )}
-        <div className="stack">
-          <LeagueForm onCreated={handleChange} />
-          <JoinLeagueForm onJoined={handleChange} />
-        </div>
         <section className="stack" aria-labelledby="league-list-heading">
           <h2 id="league-list-heading">League list</h2>
           {loading && <p role="status">Loading your leagues...</p>}
@@ -197,6 +193,10 @@ export function LeagueDashboard() {
             </article>
           ))}
         </section>
+        <div className="stack">
+          <LeagueForm onCreated={handleChange} />
+          <JoinLeagueForm onJoined={handleChange} />
+        </div>
       </section>
     </main>
   );
