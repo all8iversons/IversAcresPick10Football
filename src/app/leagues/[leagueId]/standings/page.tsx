@@ -33,55 +33,48 @@ export default async function StandingsPage({
 
   let title = "Season standings";
   let standings: StandingView[] = [];
+  let selectedWeekNumber: number | null = null;
+  const supabase = await createSupabaseServerClient();
+  const weeksResult = await supabase
+    .from("nfl_weeks")
+    .select("id, week_number")
+    .eq("season", season)
+    .eq("season_type", 2)
+    .order("week_number");
+  if (weeksResult.error) {
+    throw new Error(
+      `Could not load season weeks: ${weeksResult.error.message}`,
+    );
+  }
+  const seasonWeeks = weeksResult.data;
+
   if (period === "season") {
-    const seasonWeeks = await (await createSupabaseServerClient())
-      .from("nfl_weeks")
-      .select("id, week_number")
-      .eq("season", season)
-      .eq("season_type", 2);
-    if (seasonWeeks.error) {
-      throw new Error(
-        `Could not load season weeks: ${seasonWeeks.error.message}`,
-      );
-    }
-    for (const seasonWeek of seasonWeeks.data) {
-      await assignDefaultPicks(leagueId, seasonWeek.id);
-      await refreshAndScoreWeek(season, seasonWeek.week_number, seasonWeek.id);
-    }
+    await Promise.all(
+      seasonWeeks.map(async (seasonWeek) => {
+        await assignDefaultPicks(leagueId, seasonWeek.id);
+        await refreshAndScoreWeek(
+          season,
+          seasonWeek.week_number,
+          seasonWeek.id,
+        );
+      }),
+    );
     standings = await getSeasonStandings(leagueId, season);
   } else {
-    const supabase = await createSupabaseServerClient();
-    const weekQuery = supabase
-      .from("nfl_weeks")
-      .select("id, week_number")
-      .eq("season", season)
-      .eq("season_type", 2);
     const requestedWeek = Number(query.weekNumber);
-    if (
-      Number.isInteger(requestedWeek) &&
-      requestedWeek >= 1 &&
-      requestedWeek <= 18
-    ) {
-      weekQuery.eq("week_number", requestedWeek);
-    } else {
-      weekQuery.order("week_number", { ascending: false }).limit(1);
-    }
-    const weekResult = await weekQuery.maybeSingle();
-    if (weekResult.error)
-      throw new Error(
-        `Could not load standings week: ${weekResult.error.message}`,
-      );
-    if (!weekResult.data) {
-      standings = [];
-    } else {
-      title = `Week ${weekResult.data.week_number} standings`;
-      await assignDefaultPicks(leagueId, weekResult.data.id);
+    const selectedWeek =
+      seasonWeeks.find((week) => week.week_number === requestedWeek) ??
+      seasonWeeks[seasonWeeks.length - 1];
+    if (selectedWeek) {
+      selectedWeekNumber = selectedWeek.week_number;
+      title = `Week ${selectedWeek.week_number} standings`;
+      await assignDefaultPicks(leagueId, selectedWeek.id);
       await refreshAndScoreWeek(
         season,
-        weekResult.data.week_number,
-        weekResult.data.id,
+        selectedWeek.week_number,
+        selectedWeek.id,
       );
-      standings = await getWeeklyStandings(leagueId, weekResult.data.id);
+      standings = await getWeeklyStandings(leagueId, selectedWeek.id);
     }
   }
 
@@ -100,6 +93,22 @@ export default async function StandingsPage({
           <Link href={`?period=week&season=${season}`}>Weekly</Link>
           <Link href={`?period=season&season=${season}`}>Season</Link>
         </nav>
+        {period === "week" && seasonWeeks.length > 0 && (
+          <nav className="week-links" aria-label="Standings weeks">
+            {seasonWeeks.map((week) => (
+              <Link
+                aria-current={
+                  week.week_number === selectedWeekNumber ? "page" : undefined
+                }
+                className={`button${week.week_number === selectedWeekNumber ? " week-link-selected" : ""}`}
+                href={`?period=week&season=${season}&weekNumber=${week.week_number}`}
+                key={week.id}
+              >
+                Week {week.week_number}
+              </Link>
+            ))}
+          </nav>
+        )}
         <LeaderboardTable standings={standings} />
       </section>
     </main>

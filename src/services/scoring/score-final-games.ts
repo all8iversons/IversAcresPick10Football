@@ -10,41 +10,33 @@ export async function scoreFinalGames(weekId: string): Promise<void> {
     .eq("week_id", weekId)
     .eq("status", "final");
   if (gamesResult.error) throw gamesResult.error;
-  if (gamesResult.data.length === 0) return;
 
-  const resultByGame = new Map(
-    gamesResult.data.map((game) => [
-      game.id,
-      {
-        homeTeamId: game.home_team_id,
-        awayTeamId: game.away_team_id,
-        finalResult: game.final_result,
-        status: game.status,
-      },
-    ]),
+  // Every pick on a game is worth the same for a given selected team, so
+  // update by game and team instead of by individual pick. Picks that already
+  // have points are left alone.
+  const updates = gamesResult.data.flatMap((game) =>
+    [game.home_team_id, game.away_team_id].flatMap((teamId) => {
+      const points = scorePick(
+        teamId,
+        game.home_team_id,
+        game.away_team_id,
+        game.final_result,
+      );
+      return points === null ? [] : [{ gameId: game.id, teamId, points }];
+    }),
   );
-  const picksResult = await database
-    .from("team_picks")
-    .select("entry_id, game_id, selected_team_id")
-    .in("game_id", [...resultByGame.keys()]);
-  if (picksResult.error) throw picksResult.error;
 
-  for (const pick of picksResult.data) {
-    const game = resultByGame.get(pick.game_id);
-    if (!game) continue;
-    const points = scorePick(
-      pick.selected_team_id,
-      game.homeTeamId,
-      game.awayTeamId,
-      game.finalResult,
-    );
-    if (points === null) continue;
-
-    const update = await database
-      .from("team_picks")
-      .update({ points_awarded: points })
-      .eq("entry_id", pick.entry_id)
-      .eq("game_id", pick.game_id);
-    if (update.error) throw update.error;
+  const results = await Promise.all(
+    updates.map((update) =>
+      database
+        .from("team_picks")
+        .update({ points_awarded: update.points })
+        .eq("game_id", update.gameId)
+        .eq("selected_team_id", update.teamId)
+        .is("points_awarded", null),
+    ),
+  );
+  for (const result of results) {
+    if (result.error) throw result.error;
   }
 }

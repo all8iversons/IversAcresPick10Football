@@ -20,3 +20,6 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+
+# Local-only deployment notes
+deploy/unraid/UPDATE-RUNBOOK.md
