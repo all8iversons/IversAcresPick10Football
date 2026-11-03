@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireLeagueMember } from "@/lib/auth/require-league-member";
 import { assignDefaultPicks } from "@/services/picks/assign-default-picks";
+import { refreshAndScoreWeek } from "@/services/scoring/refresh-and-score-week";
 
 type ResultsPageProps = {
   params: Promise<{ leagueId: string; season: string; weekNumber: string }>;
@@ -25,6 +26,7 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
     throw new Error(`Could not load results: ${week.error.message}`);
   if (!week.data) notFound();
   await assignDefaultPicks(leagueId, week.data.id);
+  await refreshAndScoreWeek(season, weekNumber, week.data.id);
 
   const entry = await supabase
     .from("weekly_entries")

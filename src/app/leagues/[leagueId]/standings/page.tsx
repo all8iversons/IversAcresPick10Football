@@ -7,6 +7,8 @@ import {
   getSeasonStandings,
 } from "@/services/standings/standings-service";
 import type { StandingView } from "@/services/standings/standings-service";
+import { refreshAndScoreWeek } from "@/services/scoring/refresh-and-score-week";
+import { assignDefaultPicks } from "@/services/picks/assign-default-picks";
 import { createSupabaseServerClient } from "@/lib/auth/supabase-server";
 
 type StandingsPageProps = {
@@ -32,6 +34,20 @@ export default async function StandingsPage({
   let title = "Season standings";
   let standings: StandingView[] = [];
   if (period === "season") {
+    const seasonWeeks = await (await createSupabaseServerClient())
+      .from("nfl_weeks")
+      .select("id, week_number")
+      .eq("season", season)
+      .eq("season_type", 2);
+    if (seasonWeeks.error) {
+      throw new Error(
+        `Could not load season weeks: ${seasonWeeks.error.message}`,
+      );
+    }
+    for (const seasonWeek of seasonWeeks.data) {
+      await assignDefaultPicks(leagueId, seasonWeek.id);
+      await refreshAndScoreWeek(season, seasonWeek.week_number, seasonWeek.id);
+    }
     standings = await getSeasonStandings(leagueId, season);
   } else {
     const supabase = await createSupabaseServerClient();
@@ -59,6 +75,12 @@ export default async function StandingsPage({
       standings = [];
     } else {
       title = `Week ${weekResult.data.week_number} standings`;
+      await assignDefaultPicks(leagueId, weekResult.data.id);
+      await refreshAndScoreWeek(
+        season,
+        weekResult.data.week_number,
+        weekResult.data.id,
+      );
       standings = await getWeeklyStandings(leagueId, weekResult.data.id);
     }
   }
