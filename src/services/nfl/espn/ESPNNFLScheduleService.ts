@@ -129,7 +129,26 @@ export class ESPNNFLScheduleService implements NFLScheduleService {
       );
     }
 
-    return this.getRegularSeasonWeek(payload.season.year, payload.week.number);
+    const current = await this.getRegularSeasonWeek(
+      payload.season.year,
+      payload.week.number,
+    );
+    const weekIsOver =
+      current.games.length > 0 &&
+      current.games.every(
+        (game) => game.status === "final" || game.status === "cancelled",
+      );
+    if (weekIsOver && payload.week.number < 18) {
+      try {
+        return await this.getRegularSeasonWeek(
+          payload.season.year,
+          payload.week.number + 1,
+        );
+      } catch (error) {
+        console.error("Could not advance to the next NFL week", error);
+      }
+    }
+    return current;
   }
 
   async getRegularSeasonWeek(
